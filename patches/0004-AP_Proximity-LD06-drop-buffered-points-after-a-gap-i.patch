@@ -1,0 +1,32 @@
+From a2147c80d73b86925eae8ad34cae602924ea00fb Mon Sep 17 00:00:00 2001
+From: JoshuaDodds <61622842+JoshuaDodds@users.noreply.github.com>
+Date: Thu, 26 Nov 2026 13:09:11 +0000
+Subject: [PATCH 4/6] AP_Proximity: LD06: drop buffered points after a gap in
+ the data
+
+If no data arrives for more than 50ms the part built rotation and the
+previous sweep are stale, so throw them away and start again.
+---
+ libraries/AP_Proximity/AP_Proximity_LD06.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/libraries/AP_Proximity/AP_Proximity_LD06.cpp b/libraries/AP_Proximity/AP_Proximity_LD06.cpp
+index 7d9157c6ef..0c697994f0 100644
+--- a/libraries/AP_Proximity/AP_Proximity_LD06.cpp
++++ b/libraries/AP_Proximity/AP_Proximity_LD06.cpp
+@@ -139,6 +139,12 @@ void AP_Proximity_LD06::get_readings()
+ 
+                 const uint32_t current_ms = AP_HAL::millis();
+ 
++                if (current_ms - _last_distance_received_ms > PROXIMITY_LD06_TIMEOUT_MS) {
++                    // data stopped for a while: the buffered points and
++                    // the previous sweep are stale, start again with this packet
++                    _scan_count = 0;
++                    memset(_last_sweep_mm, 0, sizeof(_last_sweep_mm));
++                }
+                 _last_distance_received_ms =  current_ms;
+ 
+                 // Updates the temporary boundary and passes off the completed data
+-- 
+2.43.0
+
